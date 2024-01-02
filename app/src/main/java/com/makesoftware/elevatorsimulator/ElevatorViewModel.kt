@@ -15,8 +15,9 @@ class ElevatorViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ElevatorUiState())
     val uiState: StateFlow<ElevatorUiState> = _uiState.asStateFlow()
 
-    private val elevatorFloorsPerTick = 0.1F
-    private val tickTimeInMilliseconds = 100L
+    private val floorTravelTimeInMilliseconds = 2500
+    private val timeToCloseDoors: Long = 1000
+    private val timeToGatherPassengers: Long = 1000
 
     private var elevatorJob: Job? = null
 
@@ -48,16 +49,15 @@ class ElevatorViewModel : ViewModel() {
             val currentFloor = _uiState.value.currentFloor
             val nextFloor = _uiState.value.floorsToGo.first()
 
-//            transitionToNextFloor(currentFloor, nextFloor)
-
             _uiState.update {
                 it.copy(
                     currentDirection = if (currentFloor < nextFloor) {
                         ElevatorDirection.UP
                     } else {
                         ElevatorDirection.DOWN
-                    }, currentFloor = nextFloor.toFloat(),
-                    movementDuration = abs(currentFloor - nextFloor).toInt() * 2000
+                    },
+                    currentFloor = nextFloor,
+                    movementDuration = abs(currentFloor - nextFloor) * floorTravelTimeInMilliseconds
                 )
             }
         }
@@ -70,11 +70,19 @@ class ElevatorViewModel : ViewModel() {
             )
         }
 
+        viewModelScope.launch {
+            openDoors()
+        }
+
         if (_uiState.value.floorsToGo.isEmpty()) {
             stopElevator()
         } else {
             startElevator()
         }
+    }
+
+    private suspend fun openDoors() {
+        delay(timeToGatherPassengers + timeToCloseDoors)
     }
 
     private fun stopElevator() {
@@ -84,50 +92,10 @@ class ElevatorViewModel : ViewModel() {
             )
         }
     }
-
-    private suspend fun transitionToNextFloor(initialFloor: Float, nextFloor: Int) {
-        val direction = if (initialFloor < nextFloor) {
-            ElevatorDirection.UP
-        } else {
-            ElevatorDirection.DOWN
-        }
-
-        while (hasReachedNextFloor(_uiState.value.currentFloor, nextFloor, direction)) {
-
-            _uiState.update {
-                it.copy(
-                    currentDirection = direction,
-                    currentFloor = if (direction == ElevatorDirection.UP) {
-                        _uiState.value.currentFloor + elevatorFloorsPerTick
-                    } else {
-                        _uiState.value.currentFloor - elevatorFloorsPerTick
-                    }
-                )
-            }
-
-            delay(tickTimeInMilliseconds)
-        }
-
-        _uiState.update {
-            it.copy(
-                currentFloor = nextFloor.toFloat()
-            )
-        }
-    }
-
-    private fun hasReachedNextFloor(
-        currentFloor: Float, nextFloor: Int, direction: ElevatorDirection
-    ): Boolean {
-        return if (direction == ElevatorDirection.UP) {
-            currentFloor < nextFloor
-        } else {
-            currentFloor > nextFloor
-        }
-    }
 }
 
 data class ElevatorUiState(
-    val currentFloor: Float = 0F,
+    val currentFloor: Int = 0,
     val movementDuration: Int = 0,
     val currentDirection: ElevatorDirection = ElevatorDirection.STOPPED,
     val floorsToGo: List<Int> = emptyList(),

@@ -4,15 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOutQuad
-import androidx.compose.animation.core.EaseInQuad
-import androidx.compose.animation.core.EaseOutElastic
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -96,30 +90,25 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
             )
 
             val targetElevatorBottomOffset = calculateElevatorBottomOffset(
-                screenHeight = maxHeight,
-                floor = uiState.currentFloor.toInt(),
-                shaftHeight = shaftHeight
+                screenHeight = maxHeight, floor = uiState.currentFloor, shaftHeight = shaftHeight
             )
 
-            val elevatorBottomOffset by animateFloatAsState(
-                targetValue = targetElevatorBottomOffset.value,
+            val elevatorBottomOffset by animateFloatAsState(targetValue = targetElevatorBottomOffset.value,
                 animationSpec = tween(
-                    durationMillis = uiState.movementDuration,
-                    easing = EaseInOutQuad
-                ), label = "Elevator moving animation",
+                    durationMillis = uiState.movementDuration, easing = EaseInOutQuad
+                ),
+                label = "Elevator moving animation",
                 finishedListener = {
                     viewModel.elevatorHasArrived()
-                }
-            )
+                })
 
             ElevatorCabin(
-                currentFloor = uiState.currentFloor,
-                width = shaftWidth,
-                height = shaftHeight - elevatorTopPadding,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(start = shaftStartPadding)
                     .offset(y = -elevatorBottomOffset.dp),
+                width = shaftWidth,
+                height = shaftHeight - elevatorTopPadding,
             )
         }
     }
@@ -147,7 +136,7 @@ fun ElevatorCorridor(
     shaftHeight: Dp,
     onFloorSelected: (Int) -> Unit,
     elevatorCurrentDirection: ElevatorDirection,
-    elevatorCurrentFloor: Float
+    elevatorCurrentFloor: Int
 ) {
     val numberOfFloors = LocalConfiguration.current.screenHeightDp / shaftHeight.value
     val listOfFloors = (0 until numberOfFloors.toInt()).toList().reversed()
@@ -180,7 +169,7 @@ fun ElevatorFloor(
     floorNumber: Int,
     onFloorSelected: (Int) -> Unit,
     elevatorCurrentDirection: ElevatorDirection,
-    elevatorCurrentFloor: Float
+    elevatorCurrentFloor: Int
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -209,7 +198,7 @@ fun ElevatorShaft(
     shaftWidth: Dp,
     shaftHeight: Dp,
     elevatorCurrentDirection: ElevatorDirection,
-    elevatorCurrentFloor: Float
+    elevatorCurrentFloor: Int
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -219,7 +208,7 @@ fun ElevatorShaft(
             .padding(start = shaftStartPadding)
     ) {
         ElevatorFloorIndicator(
-            elevatorCurrentFloor = elevatorCurrentFloor.toInt(),
+            elevatorCurrentFloor = elevatorCurrentFloor,
             elevatorCurrentDirection = elevatorCurrentDirection,
             modifier = Modifier.height(20.dp)
         )
@@ -278,7 +267,7 @@ fun ElevatorButton(
 }
 
 @Composable
-fun ElevatorCabin(modifier: Modifier = Modifier, currentFloor: Float, width: Dp, height: Dp) {
+fun ElevatorCabin(modifier: Modifier = Modifier, width: Dp, height: Dp) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
