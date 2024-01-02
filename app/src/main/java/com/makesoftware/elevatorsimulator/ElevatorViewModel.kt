@@ -2,6 +2,7 @@ package com.makesoftware.elevatorsimulator
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithmImpl
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 class ElevatorViewModel(
-    private val elevatorPriorityAlgorithm: ElevatorPriorityAlgorithm = ElevatorPriorityAlgorithmImpl()
+    private val elevatorSortingAlgorithm: ElevatorSortingAlgorithm = ElevatorSortingAlgorithmImpl()
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ElevatorUiState())
     val uiState: StateFlow<ElevatorUiState> = _uiState.asStateFlow()
@@ -22,9 +23,6 @@ class ElevatorViewModel(
     private val timeToGatherPassengers: Long = 1000
 
     private var elevatorJob: Job? = null
-
-    // TODO:
-    // - When the elevator is moving, it should be able to stop at floors that are on the way to the target.
 
     fun callElevator(floor: Int) {
         addFloorToGo(floor)
@@ -40,12 +38,12 @@ class ElevatorViewModel(
 
         currentFloorsToGo.add(floor)
 
-        elevatorPriorityAlgorithm.sortFloorsToGo(
+        val sortedFloorsToGo = elevatorSortingAlgorithm.sortFloorsToGo(
             currentFloorsToGo, _uiState.value.currentFloor
         )
 
         _uiState.update {
-            it.copy(floorsToGo = currentFloorsToGo)
+            it.copy(floorsToGo = sortedFloorsToGo)
         }
     }
 

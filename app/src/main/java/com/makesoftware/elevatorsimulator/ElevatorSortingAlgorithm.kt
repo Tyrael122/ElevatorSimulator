@@ -1,5 +1,5 @@
 package com.makesoftware.elevatorsimulator
 
-interface ElevatorPriorityAlgorithm {
+interface ElevatorSortingAlgorithm {
     fun sortFloorsToGo(floorsToGo: List<Int>, currentFloor: Int): List<Int>
 }
