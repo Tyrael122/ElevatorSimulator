@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-class ElevatorViewModel : ViewModel() {
+class ElevatorViewModel(
+    private val elevatorPriorityAlgorithm: ElevatorPriorityAlgorithm = ElevatorPriorityAlgorithmImpl()
+) : ViewModel() {
     private val _uiState = MutableStateFlow(ElevatorUiState())
     val uiState: StateFlow<ElevatorUiState> = _uiState.asStateFlow()
 
@@ -21,6 +23,9 @@ class ElevatorViewModel : ViewModel() {
 
     private var elevatorJob: Job? = null
 
+    // TODO:
+    // - When the elevator is moving, it should be able to stop at floors that are on the way to the target.
+
     fun callElevator(floor: Int) {
         addFloorToGo(floor)
 
@@ -29,12 +34,26 @@ class ElevatorViewModel : ViewModel() {
 
     private fun addFloorToGo(floor: Int) {
         val currentFloorsToGo = _uiState.value.floorsToGo.toMutableList()
+        if (currentFloorsToGo.contains(floor)) {
+            return
+        }
+
         currentFloorsToGo.add(floor)
 
-        currentFloorsToGo.sortDescending()
+        elevatorPriorityAlgorithm.sortFloorsToGo(
+            currentFloorsToGo, _uiState.value.currentDirection, _uiState.value.currentFloor
+        )
 
         _uiState.update {
             it.copy(floorsToGo = currentFloorsToGo)
+        }
+    }
+
+    fun sortFloorsToGo(currentFloorsToGo: MutableList<Int>) {
+        if (_uiState.value.currentDirection == ElevatorDirection.UP) {
+            currentFloorsToGo.sort()
+        } else {
+            currentFloorsToGo.sortDescending()
         }
     }
 

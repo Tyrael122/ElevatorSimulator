@@ -5,9 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOutQuad
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,9 +24,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,15 +37,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makesoftware.elevatorsimulator.ui.theme.ElevatorSimulatorTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.lang.Math.ceil
+import kotlin.math.ceil
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,7 +78,6 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
 
     val uiState by viewModel.uiState.collectAsState()
 
-
     val currentFloor by animateFloatAsState(targetValue = uiState.currentFloor.toFloat(),
         animationSpec = tween(
             durationMillis = uiState.movementDuration, easing = EaseInOutQuad
@@ -79,7 +86,6 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
         finishedListener = {
             viewModel.elevatorHasArrived()
         })
-
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier
@@ -90,6 +96,7 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
                 .width(corridorWidth)
                 .fillMaxHeight()
                 .background(elevatorCorridorColor)
+                .padding(top = 10.dp)
         ) {
             ElevatorCorridor(
                 shaftWidth = shaftWidth,
@@ -98,7 +105,9 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
                     viewModel.callElevator(floorNumber)
                 },
                 elevatorCurrentDirection = uiState.currentDirection,
-                elevatorCurrentFloor = currentFloor.toInt()
+                elevatorCurrentFloor = ceil(currentFloor).toInt(),
+                numberOfFloors = (maxHeight / shaftHeight).toInt(),
+                floorsToGo = uiState.floorsToGo
             )
 
             val elevatorBottomOffset = calculateElevatorBottomOffset(
@@ -139,25 +148,24 @@ fun ElevatorCorridor(
     shaftHeight: Dp,
     onFloorSelected: (Int) -> Unit,
     elevatorCurrentDirection: ElevatorDirection,
-    elevatorCurrentFloor: Int
+    elevatorCurrentFloor: Int,
+    numberOfFloors: Int,
+    floorsToGo: List<Int>
 ) {
-    val numberOfFloors = LocalConfiguration.current.screenHeightDp / shaftHeight.value
-    val listOfFloors = (0 until numberOfFloors.toInt()).toList().reversed()
+    val listOfFloors = (0 until numberOfFloors).toList().reversed()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(elevatorCorridorColor)
-//            .padding(top = 10.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
-        repeat(numberOfFloors.toInt()) {
+        repeat(numberOfFloors) {
             ElevatorFloor(
                 shaftHeight = shaftHeight,
                 shaftWidth = shaftWidth,
                 floorNumber = listOfFloors[it],
                 onFloorSelected = onFloorSelected,
+                isSelected = listOfFloors[it] in floorsToGo,
                 elevatorCurrentDirection = elevatorCurrentDirection,
                 elevatorCurrentFloor = elevatorCurrentFloor,
             )
@@ -172,7 +180,8 @@ fun ElevatorFloor(
     floorNumber: Int,
     onFloorSelected: (Int) -> Unit,
     elevatorCurrentDirection: ElevatorDirection,
-    elevatorCurrentFloor: Int
+    elevatorCurrentFloor: Int,
+    isSelected: Boolean
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -185,12 +194,15 @@ fun ElevatorFloor(
             shaftWidth = shaftWidth,
             shaftHeight = shaftHeight,
             elevatorCurrentDirection = elevatorCurrentDirection,
-            elevatorCurrentFloor = elevatorCurrentFloor
+            elevatorCurrentFloor = elevatorCurrentFloor,
+            floorNumber = floorNumber,
+            modifier = Modifier.padding(start = shaftStartPadding)
         )
 
         ElevatorButton(
             floorNumber = floorNumber,
             onFloorSelected = onFloorSelected,
+            isSelected = isSelected,
             modifier = Modifier.padding(end = 20.dp)
         )
     }
@@ -198,21 +210,23 @@ fun ElevatorFloor(
 
 @Composable
 fun ElevatorShaft(
+    modifier: Modifier = Modifier,
     shaftWidth: Dp,
     shaftHeight: Dp,
     elevatorCurrentDirection: ElevatorDirection,
-    elevatorCurrentFloor: Int
+    elevatorCurrentFloor: Int,
+    floorNumber: Int
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .width(shaftWidth)
             .height(shaftHeight)
-            .padding(start = shaftStartPadding)
     ) {
         ElevatorFloorIndicator(
             elevatorCurrentFloor = elevatorCurrentFloor,
             elevatorCurrentDirection = elevatorCurrentDirection,
+            isFloorSelected = floorNumber == elevatorCurrentFloor,
             modifier = Modifier.height(20.dp)
         )
     }
@@ -223,6 +237,7 @@ fun ElevatorFloorIndicator(
     modifier: Modifier = Modifier,
     elevatorCurrentFloor: Int,
     elevatorCurrentDirection: ElevatorDirection,
+    isFloorSelected: Boolean,
 ) {
     Row(
         modifier = modifier
@@ -232,9 +247,9 @@ fun ElevatorFloorIndicator(
         verticalAlignment = Alignment.CenterVertically
     ) {
         val directionIndicatorIcon = when (elevatorCurrentDirection) {
-            ElevatorDirection.UP -> Icons.Filled.KeyboardArrowUp
-            ElevatorDirection.DOWN -> Icons.Filled.KeyboardArrowDown
-            ElevatorDirection.STOPPED -> Icons.Filled.Menu
+            ElevatorDirection.UP -> Icons.Filled.ArrowDropUp
+            ElevatorDirection.DOWN -> Icons.Filled.ArrowDropDown
+            ElevatorDirection.STOPPED -> Icons.Filled.Remove
         }
 
         Icon(
@@ -244,28 +259,38 @@ fun ElevatorFloorIndicator(
         )
 
         Text(
-            text = elevatorCurrentFloor.toString(),
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 10.sp,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 5.dp)
+            text = elevatorCurrentFloor.toString(), style = TextStyle(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 10.sp,
+                color = Color.White,
+                shadow = if (isFloorSelected) Shadow(
+                    Color.LightGray, offset = Offset.Zero, 3F
+                ) else null
+            ), modifier = Modifier.padding(horizontal = 5.dp)
         )
     }
 }
 
 @Composable
 fun ElevatorButton(
-    modifier: Modifier = Modifier, floorNumber: Int, onFloorSelected: (Int) -> Unit
+    modifier: Modifier = Modifier,
+    floorNumber: Int,
+    onFloorSelected: (Int) -> Unit,
+    isSelected: Boolean
 ) {
     Box(contentAlignment = Alignment.Center,
         modifier = modifier
             .size(50.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(elevatorButtonColor)
+            .background(
+                if (isSelected) selectedElevatorButtonColor else elevatorButtonColor,
+            )
             .clickable { onFloorSelected(floorNumber) }) {
 
         val floorNumberText = if (floorNumber == 0) "T" else floorNumber.toString()
-        Text(text = floorNumberText, fontWeight = FontWeight.Black, fontSize = 18.sp)
+        Text(
+            text = floorNumberText, fontWeight = FontWeight.Black, fontSize = 18.sp
+        )
     }
 }
 
@@ -292,4 +317,6 @@ val elevatorTopPadding = 25.dp
 val elevatorIndicatorColor = Color(0xFF7D7D7D)
 val elevatorDoorColor = Color(0xFFC4CAD8)
 val elevatorCorridorColor = Color(0xFFADADAD)
+
 val elevatorButtonColor = Color(0xFFE0E0E0)
+val selectedElevatorButtonColor = Color(0xFFFFFFFF)
