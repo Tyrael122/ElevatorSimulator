@@ -41,19 +41,11 @@ class ElevatorViewModel(
         currentFloorsToGo.add(floor)
 
         elevatorPriorityAlgorithm.sortFloorsToGo(
-            currentFloorsToGo, _uiState.value.currentDirection, _uiState.value.currentFloor
+            currentFloorsToGo, _uiState.value.currentFloor
         )
 
         _uiState.update {
             it.copy(floorsToGo = currentFloorsToGo)
-        }
-    }
-
-    fun sortFloorsToGo(currentFloorsToGo: MutableList<Int>) {
-        if (_uiState.value.currentDirection == ElevatorDirection.UP) {
-            currentFloorsToGo.sort()
-        } else {
-            currentFloorsToGo.sortDescending()
         }
     }
 
