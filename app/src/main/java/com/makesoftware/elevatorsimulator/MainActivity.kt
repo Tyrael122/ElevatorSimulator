@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseInOutQuad
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -69,6 +70,17 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
 
     val uiState by viewModel.uiState.collectAsState()
 
+
+    val currentFloor by animateFloatAsState(targetValue = uiState.currentFloor.toFloat(),
+        animationSpec = tween(
+            durationMillis = uiState.movementDuration, easing = EaseInOutQuad
+        ),
+        label = "Elevator moving animation",
+        finishedListener = {
+            viewModel.elevatorHasArrived()
+        })
+
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier
     ) {
@@ -86,27 +98,18 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
                     viewModel.callElevator(floorNumber)
                 },
                 elevatorCurrentDirection = uiState.currentDirection,
-                elevatorCurrentFloor = uiState.currentFloor
+                elevatorCurrentFloor = currentFloor.toInt()
             )
 
-            val targetElevatorBottomOffset = calculateElevatorBottomOffset(
-                screenHeight = maxHeight, floor = uiState.currentFloor, shaftHeight = shaftHeight
+            val elevatorBottomOffset = calculateElevatorBottomOffset(
+                screenHeight = maxHeight, floor = currentFloor, shaftHeight = shaftHeight
             )
-
-            val elevatorBottomOffset by animateFloatAsState(targetValue = targetElevatorBottomOffset.value,
-                animationSpec = tween(
-                    durationMillis = uiState.movementDuration, easing = EaseInOutQuad
-                ),
-                label = "Elevator moving animation",
-                finishedListener = {
-                    viewModel.elevatorHasArrived()
-                })
 
             ElevatorCabin(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(start = shaftStartPadding)
-                    .offset(y = -elevatorBottomOffset.dp),
+                    .offset(y = -elevatorBottomOffset),
                 width = shaftWidth,
                 height = shaftHeight - elevatorTopPadding,
             )
@@ -117,7 +120,7 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
 fun calculateElevatorBottomOffset(
     screenHeight: Dp,
     shaftHeight: Dp,
-    floor: Int,
+    floor: Float,
 ): Dp {
     val numberOfFloors = screenHeight / shaftHeight
 

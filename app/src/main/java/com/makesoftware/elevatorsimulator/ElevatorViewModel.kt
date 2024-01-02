@@ -70,9 +70,9 @@ class ElevatorViewModel : ViewModel() {
             )
         }
 
-        viewModelScope.launch {
-            openDoors()
-        }
+//        viewModelScope.launch {
+//            openDoors()
+//        }
 
         if (_uiState.value.floorsToGo.isEmpty()) {
             stopElevator()
