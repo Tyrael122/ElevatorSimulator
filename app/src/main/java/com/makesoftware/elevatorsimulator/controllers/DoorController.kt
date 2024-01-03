@@ -1,7 +1,6 @@
 package com.makesoftware.elevatorsimulator.controllers
 
 import android.util.Log
-import com.makesoftware.elevatorsimulator.ElevatorDoorState
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -51,4 +50,11 @@ class DoorController(
     fun isReadyToMove(): Boolean {
         return getDoorState() == ElevatorDoorState.CLOSED
     }
+}
+
+enum class ElevatorDoorState {
+    OPENED,
+    OPENING,
+    CLOSING,
+    CLOSED,
 }

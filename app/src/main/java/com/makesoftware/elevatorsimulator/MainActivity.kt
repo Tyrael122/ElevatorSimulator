@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makesoftware.elevatorsimulator.ui.theme.ElevatorSimulatorTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.makesoftware.elevatorsimulator.controllers.ElevatorDoorState
 import kotlin.math.ceil
 
 class MainActivity : ComponentActivity() {

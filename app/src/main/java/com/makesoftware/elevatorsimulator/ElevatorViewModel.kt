@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithmImpl
 import com.makesoftware.elevatorsimulator.controllers.DoorController
+import com.makesoftware.elevatorsimulator.controllers.ElevatorDoorState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
