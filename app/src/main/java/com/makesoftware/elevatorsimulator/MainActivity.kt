@@ -73,17 +73,6 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
 
     val uiState by viewModel.uiState.collectAsState()
 
-    // TODO: Move this to the view model, because it needs to know the current floor
-    //  as to properly control the door and the animation state.
-    val currentFloor by animateFloatAsState(targetValue = uiState.currentFloor.toFloat(),
-        animationSpec = tween(
-            durationMillis = uiState.movementDuration, easing = EaseInOutQuad
-        ),
-        label = "Elevator moving animation",
-        finishedListener = {
-            viewModel.elevatorHasArrived()
-        })
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier
     ) {
@@ -102,19 +91,19 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
                     viewModel.callElevator(floorNumber)
                 },
                 elevatorCurrentDirection = uiState.currentDirection,
-                elevatorCurrentFloor = ceil(currentFloor).toInt(),
+                elevatorCurrentFloor = ceil(uiState.currentFloor).toInt(),
                 numberOfFloors = (maxHeight / shaftHeight).toInt(),
                 floorsToGo = uiState.floorQueue
             )
 
             val elevatorBottomOffset = calculateElevatorBottomOffset(
-                screenHeight = maxHeight, floor = currentFloor, shaftHeight = shaftHeight
+                screenHeight = maxHeight, floor = uiState.currentFloor, shaftHeight = shaftHeight
             )
 
             ElevatorCabin(
                 doorState = uiState.doorState,
                 onDoorFinishedMoving = {
-                    viewModel.elevatorHasFinishedMovingDoors()
+                    viewModel.onFinishedMovingDoors()
                 },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
