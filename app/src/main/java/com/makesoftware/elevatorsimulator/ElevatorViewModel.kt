@@ -2,6 +2,7 @@ package com.makesoftware.elevatorsimulator
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithm
 import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithmImpl
 import com.makesoftware.elevatorsimulator.controllers.DoorController
 import com.makesoftware.elevatorsimulator.controllers.ElevatorDoorState
@@ -54,7 +55,6 @@ class ElevatorViewModel(
 
     private fun addFloorToQueue(floor: Int) {
         val currentFloorQueue = _uiState.value.floorQueue.toMutableList()
-
         currentFloorQueue.add(floor)
 
         val sortedFloorQueue = elevatorSortingAlgorithm.sortFloorsQueue(
@@ -85,18 +85,18 @@ class ElevatorViewModel(
     }
 
     private fun goToNextFloor() {
-        val currentFloor = _uiState.value.currentFloor
+        val currentTargetFloor = _uiState.value.currentFloor
         val nextFloor = _uiState.value.floorQueue.first()
 
         _uiState.update {
             it.copy(
-                currentDirection = if (currentFloor < nextFloor) {
+                currentDirection = if (currentTargetFloor < nextFloor) {
                     ElevatorDirection.UP
                 } else {
                     ElevatorDirection.DOWN
                 },
                 currentFloor = nextFloor,
-                movementDuration = abs(currentFloor - nextFloor) * floorTravelTimeInMilliseconds
+                movementDuration = abs(currentTargetFloor - nextFloor) * floorTravelTimeInMilliseconds
             )
         }
     }

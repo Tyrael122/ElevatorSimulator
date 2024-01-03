@@ -45,9 +45,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.makesoftware.elevatorsimulator.ui.theme.ElevatorSimulatorTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.makesoftware.elevatorsimulator.controllers.ElevatorDoorState
+import com.makesoftware.elevatorsimulator.ui.theme.ElevatorSimulatorTheme
 import kotlin.math.ceil
 
 class MainActivity : ComponentActivity() {
@@ -73,6 +73,8 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
 
     val uiState by viewModel.uiState.collectAsState()
 
+    // TODO: Move this to the view model, because it needs to know the current floor
+    //  as to properly control the door and the animation state.
     val currentFloor by animateFloatAsState(targetValue = uiState.currentFloor.toFloat(),
         animationSpec = tween(
             durationMillis = uiState.movementDuration, easing = EaseInOutQuad
@@ -123,22 +125,6 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
             )
         }
     }
-}
-
-fun calculateElevatorBottomOffset(
-    screenHeight: Dp,
-    shaftHeight: Dp,
-    floor: Float,
-): Dp {
-    val numberOfFloors = screenHeight / shaftHeight
-
-    val totalShaftHeight = numberOfFloors.toInt() * shaftHeight.value
-    val totalShaftPadding = screenHeight.value - totalShaftHeight
-
-    val shaftHeightWithPadding =
-        shaftHeight.value + (totalShaftPadding / (numberOfFloors.toInt() - 1))
-
-    return (floor * shaftHeightWithPadding).dp
 }
 
 @Composable
@@ -333,6 +319,22 @@ fun calculateDividerWidth(doorState: ElevatorDoorState, width: Dp): Float {
         ElevatorDoorState.CLOSING -> 1F
         ElevatorDoorState.CLOSED -> 1F
     }
+}
+
+fun calculateElevatorBottomOffset(
+    screenHeight: Dp,
+    shaftHeight: Dp,
+    floor: Float,
+): Dp {
+    val numberOfFloors = screenHeight / shaftHeight
+
+    val totalShaftHeight = numberOfFloors.toInt() * shaftHeight.value
+    val totalShaftPadding = screenHeight.value - totalShaftHeight
+
+    val shaftHeightWithPadding =
+        shaftHeight.value + (totalShaftPadding / (numberOfFloors.toInt() - 1))
+
+    return (floor * shaftHeightWithPadding).dp
 }
 
 val shaftStartPadding = 20.dp

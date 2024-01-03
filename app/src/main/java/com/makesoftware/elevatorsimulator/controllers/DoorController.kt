@@ -10,7 +10,7 @@ class DoorController(
     private val getDoorState: () -> ElevatorDoorState
 ) {
 
-    private val timeoutToCloseDoorInMilliseconds = 3000L
+    private val timeoutToCloseDoorInMilliseconds = 2000L
 
     fun openDoors() {
         changeDoorState(ElevatorDoorState.OPENING)

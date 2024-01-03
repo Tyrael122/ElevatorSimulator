@@ -43,6 +43,18 @@ class ElevatorSortingAlgorithmImplTest {
         assert(sortedFloorQueue == mutableListOf(3, 1))
     }
 
+//    @Test
+//    fun sortFloorsGoingUp4() {
+//        val currentFloorQueue = mutableListOf(3, 2)
+//        val currentFloor = 3
+//
+//        val sortedFloorQueue = elevatorPriorityAlgorithm.sortFloorsQueue(
+//            currentFloorQueue, currentFloor
+//        )
+//
+//        assert(sortedFloorQueue == mutableListOf(3, 2))
+//    }
+
     @Test
     fun sortFloorsGoingDown() {
         val currentFloorQueue = mutableListOf(1, 4, 3)
