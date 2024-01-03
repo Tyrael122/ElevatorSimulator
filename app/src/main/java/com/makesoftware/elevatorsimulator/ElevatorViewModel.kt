@@ -7,7 +7,6 @@ import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithm
 import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithmImpl
 import com.makesoftware.elevatorsimulator.controllers.DoorController
 import com.makesoftware.elevatorsimulator.controllers.ElevatorDoorState
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,7 +56,7 @@ class ElevatorViewModel(
         currentFloorQueue.add(floor)
 
         val sortedFloorQueue = elevatorSortingAlgorithm.sortFloorsQueue(
-            currentFloorQueue, _uiState.value.currentFloor.toInt()
+            currentFloorQueue, _uiState.value.currentFloor.toInt(), _uiState.value.currentDirection
         )
 
         _uiState.update {
@@ -71,6 +70,10 @@ class ElevatorViewModel(
         }
 
         if (_uiState.value.floorQueue.isEmpty()) {
+            _uiState.update {
+                it.copy(currentDirection = ElevatorDirection.STOPPED)
+            }
+
             return
         }
 
@@ -103,7 +106,7 @@ class ElevatorViewModel(
     private fun onReachedTargetFloor() {
         _uiState.update {
             it.copy(
-                floorQueue = it.floorQueue.drop(1), currentDirection = ElevatorDirection.STOPPED
+                floorQueue = it.floorQueue.drop(1)
             )
         }
 
