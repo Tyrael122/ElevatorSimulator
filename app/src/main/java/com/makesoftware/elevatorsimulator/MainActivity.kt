@@ -7,7 +7,6 @@ import androidx.compose.animation.core.EaseInOutQuad
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,14 +36,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -52,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makesoftware.elevatorsimulator.ui.theme.ElevatorSimulatorTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
-import java.lang.Math.ceil
 import kotlin.math.ceil
 
 class MainActivity : ComponentActivity() {
@@ -107,7 +101,7 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
                 elevatorCurrentDirection = uiState.currentDirection,
                 elevatorCurrentFloor = ceil(currentFloor).toInt(),
                 numberOfFloors = (maxHeight / shaftHeight).toInt(),
-                floorsToGo = uiState.floorsToGo
+                floorsToGo = uiState.floorQueue
             )
 
             val elevatorBottomOffset = calculateElevatorBottomOffset(
@@ -115,6 +109,10 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
             )
 
             ElevatorCabin(
+                doorState = uiState.doorState,
+                onDoorFinishedMoving = {
+                    viewModel.elevatorHasFinishedMovingDoors()
+                },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(start = shaftStartPadding)
@@ -295,7 +293,22 @@ fun ElevatorButton(
 }
 
 @Composable
-fun ElevatorCabin(modifier: Modifier = Modifier, width: Dp, height: Dp) {
+fun ElevatorCabin(
+    doorState: ElevatorDoorState,
+    onDoorFinishedMoving: () -> Unit,
+    modifier: Modifier = Modifier,
+    width: Dp,
+    height: Dp
+) {
+    val dividerWidth by animateFloatAsState(targetValue = calculateDividerWidth(doorState, width),
+        animationSpec = tween(
+            durationMillis = 1500, easing = EaseInOutQuad
+        ),
+        label = "Elevator door animation",
+        finishedListener = {
+            onDoorFinishedMoving()
+        })
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -306,8 +319,18 @@ fun ElevatorCabin(modifier: Modifier = Modifier, width: Dp, height: Dp) {
         Divider(
             color = Color.Gray, modifier = Modifier
                 .fillMaxHeight()
-                .width(1.dp)
+                .width(dividerWidth.dp)
         )
+    }
+}
+
+fun calculateDividerWidth(doorState: ElevatorDoorState, width: Dp): Float {
+    return when (doorState) {
+        ElevatorDoorState.OPENING -> width.value - 20
+        ElevatorDoorState.OPENED -> width.value - 20
+
+        ElevatorDoorState.CLOSING -> 1F
+        ElevatorDoorState.CLOSED -> 1F
     }
 }
 

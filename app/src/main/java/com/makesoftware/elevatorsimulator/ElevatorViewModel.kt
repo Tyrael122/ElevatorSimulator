@@ -3,8 +3,7 @@ package com.makesoftware.elevatorsimulator
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithmImpl
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import com.makesoftware.elevatorsimulator.controllers.DoorController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,60 +12,80 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 class ElevatorViewModel(
-    private val elevatorSortingAlgorithm: ElevatorSortingAlgorithm = ElevatorSortingAlgorithmImpl()
+    private val elevatorSortingAlgorithm: ElevatorSortingAlgorithm = ElevatorSortingAlgorithmImpl(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ElevatorUiState())
     val uiState: StateFlow<ElevatorUiState> = _uiState.asStateFlow()
 
+    private val doorController: DoorController =
+        DoorController(this::changeDoorState, this::getDoorState)
+
     private val floorTravelTimeInMilliseconds = 2500
 
-    private val timeoutToCloseDoorInMilliseconds = 3000L
-
     fun callElevator(floor: Int) {
-        addFloorToGo(floor)
+        if (floor == _uiState.value.currentFloor) {
+            doorController.openDoors()
+            return
+        }
 
-        changeDoorState(ElevatorDoorState.CLOSED)
+        addFloorToQueue(floor)
+        startReadingFloorQueue()
     }
 
     fun elevatorHasArrived() {
         _uiState.update {
             it.copy(
-                floorsToGo = it.floorsToGo.drop(1)
+                floorQueue = it.floorQueue.drop(1)
             )
         }
 
-        changeDoorState(ElevatorDoorState.OPENED)
+        doorController.openDoors()
     }
 
     fun elevatorHasFinishedMovingDoors() {
-        if (_uiState.value.floorsToGo.isEmpty()) {
-            stopElevator()
-        } else {
-            startElevator()
+        viewModelScope.launch {
+            doorController.finishedMovingDoorsCallback()
         }
+
+        startReadingFloorQueue()
     }
 
-    private fun addFloorToGo(floor: Int) {
-        val currentFloorsToGo = _uiState.value.floorsToGo.toMutableList()
-        if (currentFloorsToGo.contains(floor)) {
-            return
-        }
+    private fun addFloorToQueue(floor: Int) {
+        val currentFloorQueue = _uiState.value.floorQueue.toMutableList()
 
-        currentFloorsToGo.add(floor)
+        currentFloorQueue.add(floor)
 
-        val sortedFloorsToGo = elevatorSortingAlgorithm.sortFloorsToGo(
-            currentFloorsToGo, _uiState.value.currentFloor
+        val sortedFloorQueue = elevatorSortingAlgorithm.sortFloorsQueue(
+            currentFloorQueue, _uiState.value.currentFloor
         )
 
         _uiState.update {
-            it.copy(floorsToGo = sortedFloorsToGo)
+            it.copy(floorQueue = sortedFloorQueue)
         }
     }
 
-    private fun startElevator() {
+    private fun startReadingFloorQueue() {
+        if (!doorController.isReadyToMove()) {
+            return
+        }
+
+        if (_uiState.value.floorQueue.isEmpty()) {
+            _uiState.update {
+                it.copy(
+                    currentDirection = ElevatorDirection.STOPPED
+                )
+            }
+
+            return
+        }
+
+        goToNextFloor()
+    }
+
+    private fun goToNextFloor() {
         val currentFloor = _uiState.value.currentFloor
-        val nextFloor = _uiState.value.floorsToGo.first()
+        val nextFloor = _uiState.value.floorQueue.first()
 
         _uiState.update {
             it.copy(
@@ -84,22 +103,13 @@ class ElevatorViewModel(
     private fun changeDoorState(elevatorDoorState: ElevatorDoorState) {
         _uiState.update {
             it.copy(
-                elevatorDoorState = elevatorDoorState
+                doorState = elevatorDoorState
             )
         }
     }
 
-    private fun stopElevator() {
-        _uiState.update {
-            it.copy(
-                currentDirection = ElevatorDirection.STOPPED
-            )
-        }
-
-        viewModelScope.launch {
-            delay(timeoutToCloseDoorInMilliseconds)
-            changeDoorState(ElevatorDoorState.CLOSED)
-        }
+    private fun getDoorState(): ElevatorDoorState {
+        return _uiState.value.doorState
     }
 }
 
@@ -107,6 +117,6 @@ data class ElevatorUiState(
     val currentFloor: Int = 0,
     val movementDuration: Int = 0,
     val currentDirection: ElevatorDirection = ElevatorDirection.STOPPED,
-    val elevatorDoorState: ElevatorDoorState = ElevatorDoorState.CLOSED,
-    val floorsToGo: List<Int> = emptyList(),
+    val doorState: ElevatorDoorState = ElevatorDoorState.CLOSED,
+    val floorQueue: List<Int> = emptyList(),
 )

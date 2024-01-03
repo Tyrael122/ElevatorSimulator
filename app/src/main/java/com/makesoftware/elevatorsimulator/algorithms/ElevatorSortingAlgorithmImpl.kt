@@ -3,42 +3,42 @@ package com.makesoftware.elevatorsimulator.algorithms
 import com.makesoftware.elevatorsimulator.ElevatorSortingAlgorithm
 
 class ElevatorSortingAlgorithmImpl : ElevatorSortingAlgorithm {
-    override fun sortFloorsToGo(
-        floorsToGo: List<Int>, currentFloor: Int
+    override fun sortFloorsQueue(
+        floorQueue: List<Int>, currentFloor: Int
     ): List<Int> {
-        val mutableFloorsToGo = floorsToGo.toMutableList()
+        val mutableFloorQueue = floorQueue.toMutableList()
 
-        mutableFloorsToGo.sort()
+        mutableFloorQueue.sort()
 
-        val pivotIndex = findPivotIndex(mutableFloorsToGo, currentFloor) ?: return mutableFloorsToGo
+        val pivotIndex = findPivotIndex(mutableFloorQueue, currentFloor) ?: return mutableFloorQueue
 
-        val isGoingUp = floorsToGo.first() > currentFloor
-        return balanceOnPivotPoint(mutableFloorsToGo, pivotIndex, isGoingUp)
+        val isGoingUp = floorQueue.first() > currentFloor
+        return balanceOnPivotPoint(mutableFloorQueue, pivotIndex, isGoingUp)
     }
 
     private fun findPivotIndex(
-        mutableFloorsToGo: MutableList<Int>, currentFloor: Int
+        mutableFloorQueue: MutableList<Int>, currentFloor: Int
     ): Int? {
-        val firstFloorLessThanCurrent = mutableFloorsToGo.find { it > currentFloor } ?: return null
-        return mutableFloorsToGo.indexOf(firstFloorLessThanCurrent)
+        val firstFloorLessThanCurrent = mutableFloorQueue.find { it > currentFloor } ?: return null
+        return mutableFloorQueue.indexOf(firstFloorLessThanCurrent)
     }
 
     private fun balanceOnPivotPoint(
-        mutableFloorsToGo: MutableList<Int>, pivotIndex: Int, isGoingUp: Boolean
+        mutableFloorQueue: MutableList<Int>, pivotIndex: Int, isGoingUp: Boolean
     ): List<Int> {
-        val floorsToGoBeforePivot = mutableFloorsToGo.subList(0, pivotIndex)
-        val floorsToGoAfterPivot = mutableFloorsToGo.subList(pivotIndex, mutableFloorsToGo.size)
+        val floorsBeforePivot = mutableFloorQueue.subList(0, pivotIndex)
+        val floorsAfterPivot = mutableFloorQueue.subList(pivotIndex, mutableFloorQueue.size)
 
-        val sortedFloorsToGo = mutableListOf<Int>()
+        val sortedFloorQueue = mutableListOf<Int>()
 
         if (isGoingUp) {
-            sortedFloorsToGo.addAll(floorsToGoAfterPivot)
-            sortedFloorsToGo.addAll(floorsToGoBeforePivot)
+            sortedFloorQueue.addAll(floorsAfterPivot)
+            sortedFloorQueue.addAll(floorsBeforePivot)
         } else {
-            sortedFloorsToGo.addAll(floorsToGoBeforePivot)
-            sortedFloorsToGo.addAll(floorsToGoAfterPivot)
+            sortedFloorQueue.addAll(floorsBeforePivot)
+            sortedFloorQueue.addAll(floorsAfterPivot)
         }
 
-        return sortedFloorsToGo
+        return sortedFloorQueue
     }
 }
