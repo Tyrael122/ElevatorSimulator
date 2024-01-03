@@ -103,7 +103,7 @@ fun ElevatorSimulator(modifier: Modifier = Modifier, viewModel: ElevatorViewMode
             ElevatorCabin(
                 doorState = uiState.doorState,
                 onDoorFinishedMoving = {
-                    viewModel.onFinishedMovingDoors()
+                    viewModel.onDoorFinishedMoving()
                 },
                 modifier = Modifier
                     .align(Alignment.BottomStart)

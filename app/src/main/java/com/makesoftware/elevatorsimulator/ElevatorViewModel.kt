@@ -1,11 +1,13 @@
 package com.makesoftware.elevatorsimulator
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithm
 import com.makesoftware.elevatorsimulator.algorithms.ElevatorSortingAlgorithmImpl
 import com.makesoftware.elevatorsimulator.controllers.DoorController
 import com.makesoftware.elevatorsimulator.controllers.ElevatorDoorState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,8 +24,8 @@ class ElevatorViewModel(
     private val doorController: DoorController =
         DoorController(this::changeDoorState, this::getDoorState)
 
-    private val elevatorFloorAnimationController: ElevatorFloorAnimationController =
-        ElevatorFloorAnimationController(changeCurrentFloor = this::changeCurrentFloor)
+    private val elevatorFloorAnimator: ElevatorFloorAnimator =
+        ElevatorFloorAnimator(changeCurrentFloor = this::changeCurrentFloor)
 
     fun callElevator(floor: Int) {
         val shouldOpenDoors =
@@ -38,7 +40,7 @@ class ElevatorViewModel(
         startReadingFloorQueue()
     }
 
-    fun onFinishedMovingDoors() {
+    fun onDoorFinishedMoving() {
         viewModelScope.launch {
             doorController.finishedMovingDoorsCallback()
         }
@@ -47,6 +49,10 @@ class ElevatorViewModel(
     }
 
     private fun addFloorToQueue(floor: Int) {
+        if (_uiState.value.floorQueue.contains(floor)) {
+            return
+        }
+
         val currentFloorQueue = _uiState.value.floorQueue.toMutableList()
         currentFloorQueue.add(floor)
 
@@ -65,12 +71,6 @@ class ElevatorViewModel(
         }
 
         if (_uiState.value.floorQueue.isEmpty()) {
-            _uiState.update {
-                it.copy(
-                    currentDirection = ElevatorDirection.STOPPED
-                )
-            }
-
             return
         }
 
@@ -80,6 +80,8 @@ class ElevatorViewModel(
     private fun transitionToNextFloor() {
         val currentFloor = _uiState.value.currentFloor
         val targetFloor = _uiState.value.floorQueue.first()
+
+        Log.d("ElevatorViewModel", "Going from $currentFloor to $targetFloor")
 
         _uiState.update {
             it.copy(
@@ -92,7 +94,7 @@ class ElevatorViewModel(
         }
 
         viewModelScope.launch {
-            elevatorFloorAnimationController.startAnimation(
+            elevatorFloorAnimator.startAnimation(
                 currentFloor, targetFloor, this@ElevatorViewModel::onReachedTargetFloor
             )
         }
@@ -101,7 +103,7 @@ class ElevatorViewModel(
     private fun onReachedTargetFloor() {
         _uiState.update {
             it.copy(
-                floorQueue = it.floorQueue.drop(1)
+                floorQueue = it.floorQueue.drop(1), currentDirection = ElevatorDirection.STOPPED
             )
         }
 
