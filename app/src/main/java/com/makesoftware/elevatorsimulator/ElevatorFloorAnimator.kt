@@ -4,10 +4,8 @@ import android.animation.TimeInterpolator
 import android.animation.ValueAnimator
 import android.util.Log
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.view.animation.AnticipateInterpolator
 import android.view.animation.DecelerateInterpolator
 import androidx.core.animation.addListener
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -18,9 +16,13 @@ class ElevatorFloorAnimator(
     private val travelTimeInMillisecondsPerFloor = 2500
 
     private var animator: ValueAnimator? = null
-    private lateinit var currentElevatorDirection: ElevatorDirection
 
-    suspend fun startAnimation(initialFloor: Float, targetFloor: Int, onEnd: () -> Unit = {}) {
+    suspend fun startAnimation(
+        initialFloor: Float,
+        targetFloor: Int,
+        elevatorDirection: ElevatorDirection,
+        onEnd: () -> Unit = {}
+    ) {
         coroutineScope {
             animator?.let {
                 it.removeAllListeners()
@@ -29,7 +31,7 @@ class ElevatorFloorAnimator(
 
             launch {
                 animator = performAnimation(
-                    initialFloor, targetFloor, onEnd, AccelerateDecelerateInterpolator()
+                    initialFloor, targetFloor, onEnd, resolveInterpolator(elevatorDirection)
                 )
             }
         }
@@ -65,22 +67,11 @@ class ElevatorFloorAnimator(
         return animator
     }
 
-    private fun resolveInterpolator(initialFloor: Float, targetFloor: Int): TimeInterpolator {
-        if (animator == null) {
-            return AccelerateDecelerateInterpolator()
-        }
-
-        val previousAnimationDirection = currentElevatorDirection
-        currentElevatorDirection = if (initialFloor < targetFloor) {
-            ElevatorDirection.UP
+    private fun resolveInterpolator(elevatorDirection: ElevatorDirection): TimeInterpolator {
+        return if (animator == null || elevatorDirection == ElevatorDirection.STOPPED) {
+            AccelerateDecelerateInterpolator()
         } else {
-            ElevatorDirection.DOWN
-        }
-
-        return if (previousAnimationDirection == currentElevatorDirection) {
             DecelerateInterpolator()
-        } else {
-            AnticipateInterpolator()
         }
     }
 }

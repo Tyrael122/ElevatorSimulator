@@ -82,6 +82,15 @@ class ElevatorViewModel(
 
         Log.d("ElevatorViewModel", "Going from $currentFloor to $targetFloor")
 
+        viewModelScope.launch {
+            elevatorFloorAnimator.startAnimation(
+                currentFloor,
+                targetFloor,
+                _uiState.value.currentDirection,
+                this@ElevatorViewModel::onReachedTargetFloor
+            )
+        }
+
         _uiState.update {
             it.copy(
                 currentDirection = if (currentFloor < targetFloor) {
@@ -89,12 +98,6 @@ class ElevatorViewModel(
                 } else {
                     ElevatorDirection.DOWN
                 }
-            )
-        }
-
-        viewModelScope.launch {
-            elevatorFloorAnimator.startAnimation(
-                currentFloor, targetFloor, this@ElevatorViewModel::onReachedTargetFloor
             )
         }
     }
