@@ -70,10 +70,6 @@ class ElevatorViewModel(
         }
 
         if (_uiState.value.floorQueue.isEmpty()) {
-            _uiState.update {
-                it.copy(currentDirection = ElevatorDirection.STOPPED)
-            }
-
             return
         }
 
@@ -82,7 +78,7 @@ class ElevatorViewModel(
 
     private fun transitionToNextFloor() {
         val currentFloor = _uiState.value.currentFloor
-        val targetFloor = _uiState.value.floorQueue.first()
+        val targetFloor = calculateTargetFloor()
 
         Log.d("ElevatorViewModel", "Going from $currentFloor to $targetFloor")
 
@@ -103,10 +99,19 @@ class ElevatorViewModel(
         }
     }
 
+    private fun calculateTargetFloor(): Int {
+        return when (_uiState.value.currentDirection) {
+            ElevatorDirection.UP -> _uiState.value.floorQueue.first { it >= _uiState.value.currentFloor }
+            ElevatorDirection.DOWN -> _uiState.value.floorQueue.first { it <= _uiState.value.currentFloor }
+            else -> _uiState.value.floorQueue.first()
+        }
+    }
+
     private fun onReachedTargetFloor() {
         _uiState.update {
             it.copy(
-                floorQueue = it.floorQueue.drop(1)
+                floorQueue = it.floorQueue.minus(_uiState.value.currentFloor.toInt()),
+                currentDirection = ElevatorDirection.STOPPED
             )
         }
 
